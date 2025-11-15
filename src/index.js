@@ -9,6 +9,8 @@ const {
 const catalog = require('./catalog');
 const audio = require('./audio');
 const fs = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
 
 // Create Discord client with required intents
 const client = new Client({
@@ -138,12 +140,33 @@ client.on('interactionCreate', async (interaction) => {
 
   // /reloadtracks command
   if (commandName === 'reloadtracks') {
-    const success = catalog.reload();
-    if (success) {
-      await interaction.reply(`Reloaded track catalog. ${catalog.count} tracks loaded.`);
-    } else {
-      await interaction.reply('Failed to reload track catalog. Check console for errors.');
-    }
+    await interaction.deferReply();
+
+    // Get the path to build_tracks.py (one level up from src/)
+    const scriptPath = path.join(__dirname, '..', 'build_tracks.py');
+
+    // Run the Python script first
+    exec(`python "${scriptPath}"`, { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Failed to run build_tracks.py:', error);
+        interaction.editReply(`Failed to rebuild track catalog: ${error.message}`);
+        return;
+      }
+
+      if (stderr) {
+        console.error('build_tracks.py stderr:', stderr);
+      }
+
+      console.log('build_tracks.py output:', stdout);
+
+      // Now reload the catalog
+      const success = catalog.reload();
+      if (success) {
+        interaction.editReply(`Rebuilt and reloaded track catalog. ${catalog.count} tracks loaded.`);
+      } else {
+        interaction.editReply('Script ran but failed to reload catalog. Check console for errors.');
+      }
+    });
   }
 
   // /play command
