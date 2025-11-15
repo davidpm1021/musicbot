@@ -1,0 +1,24 @@
+{
+  "name": "dnd-music-bot",
+  "version": "1.0.0",
+  "description": "D&D Music Bot for Discord - plays locally hosted audio files in voice channels",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "music",
+    "dnd"
+  ],
+  "author": "Dave",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3"
+  }
+}
