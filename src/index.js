@@ -44,6 +44,9 @@ const commands = [
   new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Check if bot is responsive'),
+  new SlashCommandBuilder()
+    .setName('nowplaying')
+    .setDescription('Show currently playing track'),
 ].map(command => command.toJSON());
 
 // Register slash commands (guild-specific for instant updates)
@@ -177,7 +180,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       // Play the track
-      await audio.play(track.file);
+      await audio.play(track.file, track);
       await interaction.editReply(`Now playing: **${track.name}** [${track.tags.join(', ')}]`);
     } catch (error) {
       console.error('Playback error:', error);
@@ -194,6 +197,21 @@ client.on('interactionCreate', async (interaction) => {
 
     audio.stop();
     await interaction.reply('Stopped playback and left voice channel.');
+  }
+
+  // /nowplaying command
+  if (commandName === 'nowplaying') {
+    if (!audio.isConnected) {
+      await interaction.reply({ content: 'Not connected to a voice channel.', ephemeral: true });
+      return;
+    }
+
+    const track = audio.currentTrack;
+    if (track && audio.isPlaying) {
+      await interaction.reply(`Now playing: **${track.name}** [${track.tags.join(', ')}]`);
+    } else {
+      await interaction.reply('Nothing is currently playing.');
+    }
   }
 });
 

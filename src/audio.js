@@ -15,6 +15,8 @@ class AudioManager {
     this.connection = null;
     this.player = null;
     this.currentGuildId = null;
+    this.currentTrack = null;
+    this.ffmpegProcess = null;
   }
 
   /**
@@ -45,6 +47,20 @@ class AudioManager {
     this.player = createAudioPlayer();
     this.connection.subscribe(this.player);
 
+    // Handle player idle (track finished)
+    this.player.on(AudioPlayerStatus.Idle, () => {
+      console.log('Track finished playing');
+      this.currentTrack = null;
+      this.ffmpegProcess = null;
+    });
+
+    // Handle player errors
+    this.player.on('error', (error) => {
+      console.error('Audio player error:', error.message);
+      this.currentTrack = null;
+      this.ffmpegProcess = null;
+    });
+
     // Handle connection disconnect
     this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
       try {
@@ -65,9 +81,10 @@ class AudioManager {
   /**
    * Play an audio file
    * @param {string} filePath - Absolute path to the audio file
+   * @param {object} trackInfo - Optional track info object
    * @returns {Promise} Resolves when playback starts
    */
-  async play(filePath) {
+  async play(filePath, trackInfo = null) {
     if (!this.connection || !this.player) {
       throw new Error('Not connected to a voice channel');
     }
@@ -75,6 +92,12 @@ class AudioManager {
     // Verify file exists
     if (!fs.existsSync(filePath)) {
       throw new Error(`Audio file not found: ${filePath}`);
+    }
+
+    // Kill any existing FFmpeg process
+    if (this.ffmpegProcess) {
+      this.ffmpegProcess.kill('SIGTERM');
+      this.ffmpegProcess = null;
     }
 
     console.log(`Starting FFmpeg for: ${filePath}`);
@@ -90,8 +113,12 @@ class AudioManager {
       'pipe:1',
     ]);
 
+    this.ffmpegProcess = ffmpeg;
+    this.currentTrack = trackInfo;
+
     ffmpeg.on('error', (error) => {
       console.error('FFmpeg spawn error:', error);
+      this.ffmpegProcess = null;
     });
 
     ffmpeg.stderr.on('data', (data) => {
@@ -99,7 +126,10 @@ class AudioManager {
     });
 
     ffmpeg.on('close', (code) => {
-      console.log(`FFmpeg process exited with code ${code}`);
+      if (code !== 0 && code !== null) {
+        console.error(`FFmpeg process exited with error code ${code}`);
+      }
+      this.ffmpegProcess = null;
     });
 
     // Create audio resource from FFmpeg output
@@ -115,18 +145,30 @@ class AudioManager {
 
     // Wait for playback to start
     return new Promise((resolve, reject) => {
-      this.player.once(AudioPlayerStatus.Playing, () => {
+      const onPlaying = () => {
         console.log(`Now playing: ${filePath}`);
+        cleanup();
         resolve();
-      });
+      };
 
-      this.player.once('error', (error) => {
+      const onError = (error) => {
         console.error('Audio player error:', error);
+        cleanup();
         reject(error);
-      });
+      };
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        this.player.removeListener(AudioPlayerStatus.Playing, onPlaying);
+        this.player.removeListener('error', onError);
+      };
+
+      this.player.once(AudioPlayerStatus.Playing, onPlaying);
+      this.player.once('error', onError);
 
       // Timeout if playback doesn't start
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
+        cleanup();
         reject(new Error('Playback failed to start within 10 seconds'));
       }, 10000);
     });
@@ -146,12 +188,20 @@ class AudioManager {
    * Clean up resources
    */
   cleanup() {
+    // Kill FFmpeg process if running
+    if (this.ffmpegProcess) {
+      this.ffmpegProcess.kill('SIGTERM');
+      this.ffmpegProcess = null;
+    }
+
     if (this.connection) {
       this.connection.destroy();
       this.connection = null;
     }
+
     this.player = null;
     this.currentGuildId = null;
+    this.currentTrack = null;
     console.log('Left voice channel');
   }
 
