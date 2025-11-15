@@ -26,15 +26,15 @@ Play audio in a Discord voice channel using local files on disk.
 
 Support common formats: .mp3, .flac, .wav, .ogg, .m4a.
 
-Commands:
+Commands (native Discord slash commands):
 
-!play <track-id>
+/play <track-id>
 
-!stop
+/stop
 
-!search <tag1,tag2,...>
+/search <tags>
 
-!reloadtracks (reload tracks.json)
+/reloadtracks (reload tracks.json)
 
 2.2 Track Catalog
 
@@ -50,7 +50,7 @@ Script scans filesystem and outputs a tracks.json file with the following schema
 }
 
 
-id: URL-safe slug used by users (!play super-battle-theme)
+id: URL-safe slug used by users (/play track:super-battle-theme)
 
 name: friendly display name from filename
 
@@ -225,7 +225,7 @@ Bot can run via Task Scheduler or NSSM.
 
 7. Out-of-Scope Features (for now)
 
-Slash commands and autocomplete.
+Autocomplete for track IDs.
 
 Volume control.
 

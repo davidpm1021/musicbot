@@ -115,69 +115,69 @@ Must support Windows paths with spaces.
 
 ## Sprint Plan
 
-### Sprint 1: Project Foundation
+### Sprint 1: Project Foundation ✅
 **Goal**: Bot connects to Discord and responds to messages
 
-- [ ] Initialize npm project with package.json
-- [ ] Install core dependencies (discord.js, dotenv)
-- [ ] Create .env.example with required variables
-- [ ] Create src/index.js with basic bot client
-- [ ] Configure required intents (MessageContent, GuildVoiceStates)
-- [ ] Bot connects and logs "Ready" message
-- [ ] Bot responds to a test command (e.g., !ping → "Pong!")
-- [ ] Add .gitignore (node_modules, .env, tracks.json)
+- [x] Initialize npm project with package.json
+- [x] Install core dependencies (discord.js, dotenv)
+- [x] Create .env.example with required variables
+- [x] Create src/index.js with basic bot client
+- [x] Configure required intents (MessageContent, GuildVoiceStates)
+- [x] Bot connects and logs "Ready" message
+- [x] Bot responds to a test command (e.g., !ping → "Pong!")
+- [x] Add .gitignore (node_modules, .env, tracks.json)
 
 **Deliverable**: Bot online in Discord, responds to !ping
 
 ---
 
-### Sprint 2: Track Indexer
+### Sprint 2: Track Indexer ✅
 **Goal**: Python script generates tracks.json from folder structure
 
-- [ ] Create build_tracks.py script
-- [ ] Recursively scan MUSIC_PATH directory
-- [ ] Generate URL-safe slug IDs from filenames
-- [ ] Extract tags from folder hierarchy
-- [ ] Support audio extensions: .mp3, .flac, .wav, .ogg, .m4a
-- [ ] Handle Windows paths with spaces
-- [ ] Output valid tracks.json with correct schema
-- [ ] Add command-line argument for music path (or read from .env)
+- [x] Create build_tracks.py script
+- [x] Recursively scan MUSIC_PATH directory
+- [x] Generate URL-safe slug IDs from filenames
+- [x] Extract tags from folder hierarchy
+- [x] Support audio extensions: .mp3, .flac, .wav, .ogg, .m4a
+- [x] Handle Windows paths with spaces
+- [x] Output valid tracks.json with correct schema
+- [x] Add command-line argument for music path (or read from .env)
 
 **Deliverable**: `python build_tracks.py` creates valid tracks.json
 
 ---
 
-### Sprint 3: Catalog Manager
+### Sprint 3: Catalog Manager ✅
 **Goal**: Bot loads tracks.json and supports searching
 
-- [ ] Create src/catalog.js module
-- [ ] Load tracks.json into memory on startup
-- [ ] Implement track lookup by ID
-- [ ] Implement tag-based search (comma-separated, AND logic)
-- [ ] Return up to 15 results, show count if more
-- [ ] Implement !reloadtracks command (hot reload)
-- [ ] Handle missing/malformed tracks.json gracefully
-- [ ] Implement !search command with formatted output
+- [x] Create src/catalog.js module
+- [x] Load tracks.json into memory on startup
+- [x] Implement track lookup by ID
+- [x] Implement tag-based search (comma-separated, AND logic)
+- [x] Return up to 15 results, show count if more
+- [x] Implement /reloadtracks command (hot reload)
+- [x] Handle missing/malformed tracks.json gracefully
+- [x] Implement /search command with formatted output
 
-**Deliverable**: !search battle,intense returns matching tracks; !reloadtracks works
+**Deliverable**: /search battle,intense returns matching tracks; /reloadtracks works
 
 ---
 
-### Sprint 4: Audio Pipeline
+### Sprint 4: Audio Pipeline ✅
 **Goal**: Bot joins voice channel and plays audio files
 
-- [ ] Install voice dependencies (@discordjs/voice, @discordjs/opus, ffmpeg-static)
-- [ ] Create src/audio.js module
-- [ ] Implement voice channel joining (follow message author)
-- [ ] Create FFmpeg → PCM stream from audio file
-- [ ] Pipe PCM to AudioPlayer via @discordjs/voice
-- [ ] Implement basic !play <track-id> command
-- [ ] Validate user is in voice channel before playing
-- [ ] Validate track exists in catalog
-- [ ] Validate file exists on disk
-- [ ] Implement !stop command (stop playback, leave channel)
+- [x] Install voice dependencies (@discordjs/voice, opusscript, ffmpeg-static, @snazzah/davey)
+- [x] Create src/audio.js module
+- [x] Implement voice channel joining (follow message author)
+- [x] Create FFmpeg → PCM stream from audio file
+- [x] Pipe PCM to AudioPlayer via @discordjs/voice
+- [x] Implement /play <track-id> command with autocomplete
+- [x] Validate user is in voice channel before playing
+- [x] Validate track exists in catalog
+- [x] Validate file exists on disk
+- [x] Implement /stop command (stop playback, leave channel)
 
-**Deliverable**: !play super-battle-theme plays audio in voice channel; !stop works
+**Deliverable**: /play super-battle-theme plays audio in voice channel; /stop works
 
 ---
 
@@ -201,4 +201,20 @@ Must support Windows paths with spaces.
 
 *Update this section with each commit*
 
-**Current Status**: Sprint 1 - Not Started
+### 2025-11-15
+- **Sprint 1 Complete** (commit ea7904a)
+  - Initialized npm project with discord.js v14.24.2 and dotenv
+  - Created bot entry point with required intents
+  - Bot connects as ShatterSeaRadio#3877
+  - !ping command working
+  - Graceful shutdown handling implemented
+
+- **Sprints 2-4 Complete** (MVP functional)
+  - Track indexer (build_tracks.py) generates tracks.json from folder structure
+  - Catalog manager loads/searches tracks with hot reload
+  - Native Discord slash commands with autocomplete for track IDs
+  - Audio playback via FFmpeg → PCM → Discord voice channel
+  - Commands: /play, /stop, /search, /reloadtracks, /ping
+  - Dependencies: @discordjs/voice, opusscript, ffmpeg-static, @snazzah/davey, sodium-native
+
+**Current Status**: Sprint 5 - Error Handling & Polish (optional)
