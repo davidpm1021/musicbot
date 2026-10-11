@@ -127,3 +127,6 @@ Bot responds with "Pong!" if it's running.
 ---
 
 Questions? Contact Dave.
+
+### Catalog rebuild access
+/reloadtracks requires Manage Server permission. Only one rebuild can run across all servers, with a one-minute cooldown and a two-minute timeout. Rebuild responses are private to the requester.

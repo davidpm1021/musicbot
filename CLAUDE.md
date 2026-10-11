@@ -227,3 +227,7 @@ Must support Windows paths with spaces.
   - Prevents multiple simultaneous playback by killing existing FFmpeg process
 
 **Current Status**: MVP Complete - All 5 sprints done, bot fully functional
+
+## Security maintenance (2026-10-11)
+Updated locked dependencies to remove npm audit findings. Catalog rebuilds now require Manage Server, are serialized globally, and have a cooldown and process timeout. Run npm test for the rebuild guard regression tests. Node.js 22.12 or newer is required by the voice dependency.
+
