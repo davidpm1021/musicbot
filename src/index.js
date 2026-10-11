@@ -5,12 +5,16 @@ const {
   REST,
   Routes,
   SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
 } = require('discord.js');
 const catalog = require('./catalog');
 const audio = require('./audio');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
+const { createReloadGuard } = require('./reload-guard');
+const reloadGuard = createReloadGuard();
 
 // Create Discord client with required intents
 const client = new Client({
@@ -42,7 +46,9 @@ const commands = [
         .setRequired(false)),
   new SlashCommandBuilder()
     .setName('reloadtracks')
-    .setDescription('Reload the track catalog from disk'),
+    .setDescription('Reload the track catalog from disk')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .setDMPermission(false),
   new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Check if bot is responsive'),
@@ -138,35 +144,42 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply(formatted);
   }
 
-  // /reloadtracks command
+  // /reloadtracks command: enforce permissions even if command overrides change.
   if (commandName === 'reloadtracks') {
-    await interaction.deferReply();
+    const allowed = interaction.inGuild() &&
+      interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
+    const rejection = reloadGuard.acquire(allowed);
+    if (rejection) {
+      await interaction.reply({ content: rejection, flags: MessageFlags.Ephemeral });
+      return;
+    }
 
-    // Get the path to build_tracks.py (one level up from src/)
-    const scriptPath = path.join(__dirname, '..', 'build_tracks.py');
-
-    // Run the Python script first
-    exec(`python "${scriptPath}"`, { cwd: path.join(__dirname, '..') }, (error, stdout, stderr) => {
-      if (error) {
-        console.error('Failed to run build_tracks.py:', error);
-        interaction.editReply(`Failed to rebuild track catalog: ${error.message}`);
-        return;
-      }
-
-      if (stderr) {
-        console.error('build_tracks.py stderr:', stderr);
-      }
-
-      console.log('build_tracks.py output:', stdout);
-
-      // Now reload the catalog
-      const success = catalog.reload();
-      if (success) {
-        interaction.editReply(`Rebuilt and reloaded track catalog. ${catalog.count} tracks loaded.`);
-      } else {
-        interaction.editReply('Script ran but failed to reload catalog. Check console for errors.');
-      }
-    });
+    try {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const scriptPath = path.join(__dirname, '..', 'build_tracks.py');
+      await new Promise((resolve, reject) => {
+        execFile('python', [scriptPath], {
+          cwd: path.join(__dirname, '..'),
+          timeout: 120_000,
+          maxBuffer: 1024 * 1024,
+        }, (error, stdout, stderr) => {
+          if (stderr) console.error('build_tracks.py stderr:', stderr);
+          if (error) return reject(error);
+          console.log('build_tracks.py output:', stdout);
+          resolve();
+        });
+      });
+      if (!catalog.reload()) throw new Error('Catalog reload failed');
+      await interaction.editReply(`Rebuilt and reloaded track catalog. ${catalog.count} tracks loaded.`);
+    } catch (error) {
+      console.error('Failed to rebuild track catalog:', error);
+      const content = 'Failed to rebuild track catalog. Check the bot server logs.';
+      if (interaction.deferred) await interaction.editReply(content);
+      else await interaction.reply({ content, flags: MessageFlags.Ephemeral });
+    } finally {
+      reloadGuard.release();
+    }
+    return;
   }
 
   // /play command
